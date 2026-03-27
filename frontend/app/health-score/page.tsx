@@ -1,19 +1,20 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import Nav from '../../components/Nav'
+import SideNav from '../../components/SideNav'
+import TopBar from '../../components/TopBar'
+import Ticker from '../../components/Ticker'
 import CountUp from '../../components/CountUp'
-import { IconShield, IconHeart, IconTrend, IconAlert, IconCheck, IconSpinner } from '../../components/Icons'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const DIMS = [
-  { key: 'emergency_preparedness', label: 'Emergency Fund', Icon: IconShield },
-  { key: 'insurance_coverage', label: 'Insurance', Icon: IconHeart },
-  { key: 'investment_diversification', label: 'Investments', Icon: IconTrend },
-  { key: 'debt_health', label: 'Debt Health', Icon: IconAlert },
-  { key: 'tax_efficiency', label: 'Tax Efficiency', Icon: IconCheck },
-  { key: 'retirement_readiness', label: 'Retirement', Icon: IconShield },
+  { key: 'emergency_preparedness', label: 'Emergency Resilience', icon: 'emergency_home', sub: 'Liquidity' },
+  { key: 'insurance_coverage', label: 'Risk Mitigation', icon: 'verified_user', sub: 'Protection' },
+  { key: 'investment_diversification', label: 'Asset Diversification', icon: 'pie_chart', sub: 'Allocation' },
+  { key: 'debt_health', label: 'Debt Efficiency', icon: 'balance', sub: 'Solvency' },
+  { key: 'tax_efficiency', label: 'Fiscal Precision', icon: 'receipt_long', sub: 'Tax Leakage' },
+  { key: 'retirement_readiness', label: 'Longevity Planning', icon: 'update', sub: 'Corpus' },
 ]
 
 export default function HealthScorePage() {
@@ -28,245 +29,269 @@ export default function HealthScorePage() {
   }
 
   async function submit() {
-    setLoading(true)
-    setError('')
+    setLoading(true); setError('')
     try {
       const res = await fetch(`${API}/api/health-score`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       })
       if (!res.ok) throw new Error('Scoring failed')
       setResult(await res.json())
-    } catch (e: any) {
-      setError(e.message)
-    } finally {
-      setLoading(false)
-    }
+    } catch (e: any) { setError(e.message) }
+    finally { setLoading(false) }
   }
+
+  const inputClass = "w-full bg-[#181818] border-none rounded-[10px] p-4 text-[#e5e2e1] outline-none transition-all text-sm"
 
   const steps = [
     {
-      title: 'Basic Info',
-      subtitle: 'Tell us about your income and expenses',
-      fields: [
-        { label: 'Age', key: 'age', type: 'number', placeholder: '28' },
-        { label: 'Monthly Take-Home Income (₹)', key: 'income', type: 'number', placeholder: '80000' },
-        { label: 'Monthly Expenses (₹)', key: 'expenses', type: 'number', placeholder: '45000' },
-      ]
+      title: 'Step 1: Basic Profile', tag: '1 of 3',
+      fields: (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[{l:'Age',k:'age',ph:'28'},{l:'Monthly Income (₹)',k:'income',ph:'80000'},{l:'Monthly Expenses (₹)',k:'expenses',ph:'45000'}].map(f => (
+            <div key={f.k} className="space-y-2">
+              <label className="text-[0.6875rem] font-semibold uppercase tracking-widest opacity-60">{f.l}</label>
+              <input type="number" placeholder={f.ph} className={inputClass}
+                style={{}} onFocus={e => (e.currentTarget.style.boxShadow='0 0 0 1px #e63329')} onBlur={e => (e.currentTarget.style.boxShadow='none')}
+                onChange={e => update(f.k, +e.target.value)} />
+            </div>
+          ))}
+        </div>
+      )
     },
     {
-      title: 'Protection',
-      subtitle: 'Emergency buffer and insurance coverage',
-      fields: [
-        { label: 'Emergency fund covers how many months?', key: 'emergency_months', type: 'number', placeholder: '3' },
-      ]
+      title: 'Step 2: Protection Coverage', tag: '2 of 3',
+      fields: (
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-[0.6875rem] font-semibold uppercase tracking-widest opacity-60">Emergency fund covers how many months?</label>
+            <input type="number" placeholder="3" className={inputClass}
+              onFocus={e => (e.currentTarget.style.boxShadow='0 0 0 1px #e63329')} onBlur={e => (e.currentTarget.style.boxShadow='none')}
+              onChange={e => update('emergency_months', +e.target.value)} />
+          </div>
+          {[{k:'has_term',l:'I have term insurance',sk:'term_cover',sl:'Term cover amount (₹)'},{k:'has_health',l:'I have health insurance',sk:'health_cover',sl:'Health cover amount (₹)'}].map(item => (
+            <div key={item.k} className="space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer" onClick={() => update(item.k, !data[item.k])}>
+                <div className={`w-5 h-5 rounded-[5px] border-2 flex items-center justify-center transition-all ${data[item.k] ? 'border-[#e63329] bg-[#e63329]' : 'border-white/20'}`}>
+                  {data[item.k] && <span className="material-symbols-outlined text-white text-xs" style={{fontSize:12}}>check</span>}
+                </div>
+                <span className="text-sm font-medium">{item.l}</span>
+              </label>
+              {data[item.k] && (
+                <input type="number" placeholder={item.sl} className={inputClass}
+                  onFocus={e => (e.currentTarget.style.boxShadow='0 0 0 1px #e63329')} onBlur={e => (e.currentTarget.style.boxShadow='none')}
+                  onChange={e => update(item.sk, +e.target.value)} />
+              )}
+            </div>
+          ))}
+        </div>
+      )
     },
     {
-      title: 'Wealth & Debt',
-      subtitle: 'Your investments, loans and tax strategy',
-      fields: [
-        { label: 'Total investments — MF + stocks + FD + PF (₹)', key: 'investments', type: 'number', placeholder: '500000' },
-        { label: 'Outstanding loans total (₹)', key: 'loans', type: 'number', placeholder: '0' },
-        { label: 'Monthly EMI total (₹)', key: 'emi', type: 'number', placeholder: '0' },
-        { label: 'Annual PF + NPS contribution (₹)', key: 'pf_nps', type: 'number', placeholder: '60000' },
-      ]
+      title: 'Step 3: Asset & Liability Mapping', tag: '3 of 3',
+      fields: (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[{l:'Total Investments (₹)',k:'investments',ph:'500000'},{l:'Outstanding Loans (₹)',k:'loans',ph:'0'},{l:'Monthly EMI (₹)',k:'emi',ph:'0'},{l:'Annual PF + NPS (₹)',k:'pf_nps',ph:'60000'}].map(f => (
+              <div key={f.k} className="space-y-2">
+                <label className="text-[0.6875rem] font-semibold uppercase tracking-widest opacity-60">{f.l}</label>
+                <input type="number" placeholder={f.ph} className={inputClass}
+                  onFocus={e => (e.currentTarget.style.boxShadow='0 0 0 1px #e63329')} onBlur={e => (e.currentTarget.style.boxShadow='none')}
+                  onChange={e => update(f.k, +e.target.value)} />
+              </div>
+            ))}
+          </div>
+          <div className="space-y-2">
+            <label className="text-[0.6875rem] font-semibold uppercase tracking-widest opacity-60">Current Tax Regime</label>
+            <div className="flex bg-[#181818] p-1.5 rounded-[10px]">
+              {['new','old'].map(r => (
+                <button key={r} onClick={() => update('tax_regime', r)}
+                  className={`flex-1 py-3 text-xs font-bold uppercase rounded-[8px] transition-all ${data.tax_regime===r ? 'bg-[#1c1b1b] text-[#e63329]' : 'text-[#e5e2e1]/40 hover:text-[#e5e2e1]'}`}>
+                  {r === 'new' ? 'New Regime' : 'Old Regime'}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )
     }
   ]
 
   if (result) {
     const score = result.overall_score || 0
     const grade = result.grade || 'C'
-    const scoreColor = score >= 75 ? 'var(--green-bright)' : score >= 50 ? 'var(--yellow-bright)' : '#f87171'
+    const scoreColor = score >= 75 ? '#adc6ff' : score >= 50 ? '#f59e0b' : '#e63329'
 
     return (
-      <>
-        <Nav />
-        <main style={{ maxWidth: '760px', margin: '0 auto', padding: '40px 24px', animation: 'fadeUp 0.5s ease' }}>
-          <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-            <div style={{ fontFamily: 'Syne, sans-serif', fontSize: '88px', fontWeight: 800, color: scoreColor, letterSpacing: '-4px', lineHeight: 1 }}>
-              <CountUp end={score} duration={1500} />
-            </div>
-            <div style={{ fontFamily: 'Syne, sans-serif', fontSize: '20px', fontWeight: 700, color: scoreColor, marginTop: '8px' }}>
-              Grade {grade}
-            </div>
-            <p style={{ color: 'var(--muted)', fontSize: '14px', marginTop: '8px' }}>Your Money Health Score</p>
-            {result.savings_rate_pct != null && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '12px', padding: '6px 14px', borderRadius: '20px', background: 'var(--surface)', border: '1px solid var(--border)', fontSize: '13px' }}>
-                Savings rate: <strong style={{ color: 'var(--text)' }}>{result.savings_rate_pct}%</strong>
-                {result.monthly_surplus > 0 && <> · Surplus: <strong style={{ color: 'var(--green-bright)' }}>₹{result.monthly_surplus.toLocaleString('en-IN')}/mo</strong></>}
-              </div>
-            )}
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
-            {DIMS.map(dim => {
-              const d = result.dimensions?.[dim.key]
-              if (!d) return null
-              const color = d.score >= 70 ? 'var(--green-bright)' : d.score >= 40 ? 'var(--yellow-bright)' : '#f87171'
-              return (
-                <div key={dim.key} className="card" style={{ padding: '20px 22px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ color: 'var(--muted)' }}><dim.Icon size={15} /></div>
-                      <span style={{ fontWeight: 600, fontSize: '13px' }}>{dim.label}</span>
-                    </div>
-                    <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '20px', color }}>
-                      <CountUp end={d.score} duration={1200} />
-                    </span>
-                  </div>
-                  <div style={{ height: '4px', background: 'var(--surface-2)', borderRadius: '4px', marginBottom: '10px', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', borderRadius: '4px', width: `${d.score}%`, background: color, transition: 'width 1s ease' }} />
-                  </div>
-                  <p style={{ fontSize: '12px', color: 'var(--muted)', lineHeight: 1.6 }}>{d.action}</p>
+      <div className="min-h-screen">
+        <SideNav />
+        <TopBar titleRed="Money Health" title="Score" />
+        <div className="lg:ml-64 pt-16">
+          <Ticker />
+          <div className="max-w-6xl mx-auto px-8 py-12" style={{ animation: 'fadeUp 0.5s ease' }}>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start mb-20">
+              <div className="lg:col-span-7">
+                <span className="text-[0.6875rem] font-semibold text-[#e63329] uppercase tracking-[0.2em]">Diagnostic Result</span>
+                <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter mt-1 mb-8">Money Health Score.</h1>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {DIMS.map(dim => {
+                    const d = result.dimensions?.[dim.key]
+                    if (!d) return null
+                    const color = d.score >= 70 ? '#adc6ff' : d.score >= 40 ? '#f59e0b' : '#e63329'
+                    return (
+                      <div key={dim.key} className="bg-[#111111] p-7 rounded-[16px] hover:bg-[#1c1b1b] transition-all duration-300 group">
+                        <div className="flex justify-between items-start mb-6">
+                          <span className="material-symbols-outlined opacity-80" style={{ color }}>{dim.icon}</span>
+                          <span className="text-xl font-bold"><CountUp end={d.score} /></span>
+                        </div>
+                        <h3 className="font-bold mb-1 text-sm">{dim.label}</h3>
+                        <div className="w-full bg-[#080808] h-1.5 rounded-full mb-4">
+                          <div className="h-full rounded-full" style={{ width: `${d.score}%`, background: color, transition: 'width 1s ease' }} />
+                        </div>
+                        <div className="flex justify-between items-center text-[0.6875rem] font-semibold opacity-40 uppercase">
+                          <span>{dim.sub}</span>
+                          <span className="group-hover:translate-x-1 transition-transform cursor-pointer" style={{ color }}>{d.status}</span>
+                        </div>
+                        {d.action && <p className="text-[11px] text-[#e5e2e1]/40 mt-3 leading-relaxed">{d.action}</p>}
+                      </div>
+                    )
+                  })}
                 </div>
-              )
-            })}
-          </div>
-
-          {result.top_priority && (
-            <div style={{
-              padding: '20px 24px', borderRadius: '14px',
-              background: 'rgba(230,51,41,0.06)', border: '1px solid rgba(230,51,41,0.2)',
-              marginBottom: '20px',
-            }}>
-              <div style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, color: 'var(--red)', fontSize: '13px', marginBottom: '8px' }}>
-                Top Priority
               </div>
-              <p style={{ fontSize: '14px', lineHeight: 1.6 }}>{result.top_priority}</p>
-            </div>
-          )}
 
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button onClick={() => { setResult(null); setStep(0); setData({ tax_regime: 'new' }) }} className="btn btn-ghost">
-              Retake
-            </button>
-            <Link href="/fire" className="btn btn-red" style={{ textDecoration: 'none' }}>
-              Build FIRE Plan →
-            </Link>
+              <div className="lg:col-span-5 space-y-6">
+                <div className="bg-[#1c1b1b] rounded-[16px] p-8 border border-white/5 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-4 opacity-5">
+                    <span className="material-symbols-outlined text-9xl">shield_with_heart</span>
+                  </div>
+                  <div className="relative z-10 space-y-4">
+                    <h3 className="text-sm font-semibold tracking-widest uppercase opacity-60">Health Index Result</h3>
+                    <div className="flex items-baseline gap-4">
+                      <span className="text-[5.5rem] font-extrabold tracking-tighter leading-none" style={{ color: scoreColor }}>
+                        <CountUp end={score} duration={1500} />
+                      </span>
+                      <div className="flex flex-col">
+                        <span className="text-2xl font-bold">Grade {grade}</span>
+                        <span className="text-xs opacity-40 uppercase font-semibold">Sovereign Class</span>
+                      </div>
+                    </div>
+                    {result.savings_rate_pct != null && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="bg-[#4b8eff]/20 text-[#adc6ff] px-3 py-1 rounded-full text-[0.6875rem] font-bold">SAVINGS RATE: {result.savings_rate_pct}%</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {result.top_priority && (
+                  <div className="bg-[#111111] border-2 border-[#e63329] rounded-[16px] p-6 space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div className="bg-[#e63329]/10 p-2 rounded-lg">
+                        <span className="material-symbols-outlined text-[#e63329]">priority_high</span>
+                      </div>
+                      <span className="text-[0.6rem] font-black bg-[#e63329] text-white px-2 py-0.5 rounded uppercase">High Priority</span>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold mb-1">Top Priority</h4>
+                      <p className="text-sm text-[#e5e2e1]/60 font-light mt-1">{result.top_priority}</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-4">
+                  <button onClick={() => { setResult(null); setStep(0); setData({ tax_regime: 'new' }) }}
+                    className="text-[0.875rem] font-semibold text-[#e5e2e1] opacity-40 hover:opacity-100 transition-opacity flex items-center gap-2">
+                    <span className="material-symbols-outlined text-sm">replay</span> Retake Assessment
+                  </button>
+                  <div className="flex gap-4">
+                    <Link href="/fire">
+                      <button className="px-8 py-4 bg-[#e63329] text-[#e5e2e1] font-extrabold uppercase tracking-widest rounded-[10px] text-sm transition-all hover:-translate-y-0.5"
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.boxShadow = '0 0 15px rgba(230,51,41,0.4)'}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.boxShadow = 'none'}>
+                        Next: FIRE Plan
+                      </button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </main>
-      </>
+        </div>
+      </div>
     )
   }
 
   return (
-    <>
-      <Nav />
-      <main style={{ maxWidth: '520px', margin: '0 auto', padding: '40px 24px' }}>
-        <div style={{ marginBottom: '36px' }}>
-          <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: '36px', fontWeight: 800, letterSpacing: '-1px', marginBottom: '8px' }}>
-            Money Health <span style={{ color: 'var(--red)' }}>Score</span>
-          </h1>
-          <p style={{ color: 'var(--muted-2)', fontSize: '14px' }}>3 steps · 2 minutes · 6 financial dimensions</p>
-        </div>
+    <div className="min-h-screen">
+      <SideNav />
+      <TopBar titleRed="Money Health" title="Score" />
+      <div className="lg:ml-64 pt-16">
+        <Ticker />
+        <div className="max-w-6xl mx-auto px-8 py-12">
+          <section className="mb-12">
+            <span className="text-[0.6875rem] font-semibold text-[#e63329] uppercase tracking-[0.2em]">Diagnostic Phase</span>
+            <h1 className="text-5xl md:text-6xl font-extrabold tracking-tighter mt-1">Money Health Score.</h1>
+            <p className="text-[#e5e2e1]/40 font-light max-w-2xl mt-4 italic text-sm">Quantitative analysis of your financial health. Complete the assessment to unlock your sovereign metrics.</p>
+          </section>
 
-        {/* progress */}
-        <div style={{ display: 'flex', gap: '6px', marginBottom: '32px' }}>
-          {steps.map((s, i) => (
-            <div key={i} style={{ flex: 1 }}>
-              <div style={{
-                height: '3px', borderRadius: '4px',
-                background: i <= step ? 'var(--red)' : 'var(--border)',
-                transition: 'background 0.3s',
-                marginBottom: '6px',
-              }} />
-              <div style={{ fontSize: '11px', color: i <= step ? 'var(--muted-2)' : 'var(--muted)' }}>{s.title}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="card" style={{ marginBottom: '16px' }}>
-          <div style={{ marginBottom: '24px' }}>
-            <h2 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700, fontSize: '18px', marginBottom: '4px' }}>{steps[step].title}</h2>
-            <p style={{ fontSize: '13px', color: 'var(--muted)' }}>{steps[step].subtitle}</p>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {steps[step].fields.map(f => (
-              <label key={f.key}>
-                <div style={{ fontSize: '13px', color: 'var(--muted-2)', marginBottom: '6px' }}>{f.label}</div>
-                <input
-                  type={f.type}
-                  placeholder={f.placeholder}
-                  className="input"
-                  value={data[f.key] || ''}
-                  onChange={e => update(f.key, f.type === 'number' ? +e.target.value : e.target.value)}
-                />
-              </label>
-            ))}
-
-            {step === 1 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {[
-                  { key: 'has_term', label: 'I have term insurance', subKey: 'term_cover', subLabel: 'Cover amount (₹)' },
-                  { key: 'has_health', label: 'I have health insurance', subKey: 'health_cover', subLabel: 'Cover amount (₹)' },
-                ].map(item => (
-                  <div key={item.key}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: data[item.key] ? '10px' : '0' }}>
-                      <div
-                        onClick={() => update(item.key, !data[item.key])}
-                        style={{
-                          width: '20px', height: '20px', borderRadius: '6px',
-                          border: `2px solid ${data[item.key] ? 'var(--red)' : 'var(--border)'}`,
-                          background: data[item.key] ? 'var(--red)' : 'transparent',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0,
-                        }}>
-                        {data[item.key] && <IconCheck size={12} />}
-                      </div>
-                      <span style={{ fontSize: '14px' }}>{item.label}</span>
-                    </label>
-                    {data[item.key] && (
-                      <input
-                        type="number"
-                        placeholder={item.subLabel}
-                        className="input"
-                        onChange={e => update(item.subKey, +e.target.value)}
-                      />
-                    )}
-                  </div>
-                ))}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+            <div className="lg:col-span-7 space-y-8">
+              <div className="w-full bg-[#111111] h-1 rounded-full overflow-hidden">
+                <div className="bg-[#e63329] h-full transition-all duration-700" style={{ width: `${((step + 1) / 3) * 100}%` }} />
               </div>
-            )}
 
-            {step === 2 && (
-              <div>
-                <div style={{ fontSize: '13px', color: 'var(--muted-2)', marginBottom: '8px' }}>Tax Regime</div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  {['old', 'new'].map(r => (
-                    <button key={r} onClick={() => update('tax_regime', r)} className="btn" style={{
-                      flex: 1, fontSize: '13px',
-                      background: data.tax_regime === r ? 'var(--red-dim)' : 'transparent',
-                      border: `1px solid ${data.tax_regime === r ? 'rgba(230,51,41,0.4)' : 'var(--border)'}`,
-                      color: data.tax_regime === r ? 'var(--text)' : 'var(--muted)',
-                    }}>
-                      {r === 'old' ? 'Old Regime' : 'New Regime'}
+              <div className="bg-[#111111] rounded-2xl p-8 space-y-8">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-bold tracking-tight">{steps[step].title}</h2>
+                  <span className="text-xs font-semibold text-[#e63329] opacity-80 bg-[#e63329]/10 px-3 py-1 rounded-full">{steps[step].tag}</span>
+                </div>
+                {steps[step].fields}
+                {error && <p className="text-[#f87171] text-sm">{error}</p>}
+                <div className="flex gap-4 pt-2">
+                  {step > 0 && (
+                    <button onClick={() => setStep(s => s - 1)}
+                      className="flex-1 py-4 bg-[#1c1b1b] border border-white/10 text-sm font-bold uppercase rounded-[10px] hover:bg-[#353534] transition-colors">
+                      Back
                     </button>
+                  )}
+                  {step < steps.length - 1 ? (
+                    <button onClick={() => setStep(s => s + 1)}
+                      className="flex-1 py-4 bg-[#e63329] text-white font-extrabold uppercase tracking-widest rounded-[10px] transition-all hover:-translate-y-0.5"
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.boxShadow = '0 0 15px rgba(230,51,41,0.4)'}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.boxShadow = 'none'}>
+                      Next
+                    </button>
+                  ) : (
+                    <button onClick={submit} disabled={loading}
+                      className="flex-1 py-4 bg-[#e63329] text-white font-extrabold uppercase tracking-widest rounded-[10px] transition-all hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                      onMouseEnter={e => !loading && ((e.currentTarget as HTMLElement).style.boxShadow = '0 0 15px rgba(230,51,41,0.4)')}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.boxShadow = 'none'}>
+                      {loading ? 'Calculating...' : 'Generate Intelligence'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-5 space-y-6">
+              <div className="bg-[#1c1b1b] rounded-[16px] p-8 border border-white/5">
+                <h3 className="text-sm font-semibold tracking-widest uppercase opacity-60 mb-6">6 Dimensions Analysed</h3>
+                <div className="space-y-4">
+                  {DIMS.map((dim, i) => (
+                    <div key={dim.key} className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${i <= step * 2 + 1 ? 'bg-[#e63329]/10' : 'bg-white/5'}`}>
+                        <span className={`material-symbols-outlined text-sm ${i <= step * 2 + 1 ? 'text-[#e63329]' : 'opacity-20'}`}>{dim.icon}</span>
+                      </div>
+                      <span className={`text-sm font-medium ${i <= step * 2 + 1 ? 'text-[#e5e2e1]' : 'opacity-30'}`}>{dim.label}</span>
+                      {i <= step * 2 + 1 && <span className="material-symbols-outlined text-[#adc6ff] text-sm ml-auto">check_circle</span>}
+                    </div>
                   ))}
                 </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
-
-        {error && <p style={{ color: '#f87171', fontSize: '13px', marginBottom: '12px' }}>{error}</p>}
-
-        <div style={{ display: 'flex', gap: '10px' }}>
-          {step > 0 && (
-            <button onClick={() => setStep(s => s - 1)} className="btn btn-ghost">Back</button>
-          )}
-          {step < steps.length - 1 ? (
-            <button onClick={() => setStep(s => s + 1)} className="btn btn-red" style={{ flex: 1 }}>
-              Next →
-            </button>
-          ) : (
-            <button onClick={submit} disabled={loading} className="btn btn-red" style={{ flex: 1 }}>
-              {loading ? <><IconSpinner size={16} /> Calculating...</> : 'Get My Score →'}
-            </button>
-          )}
-        </div>
-      </main>
-    </>
+      </div>
+    </div>
   )
 }

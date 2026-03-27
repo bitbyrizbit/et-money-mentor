@@ -4,13 +4,13 @@ import { useEffect, useRef, useState } from 'react'
 interface Props {
   end: number
   duration?: number
-  prefix?: string
-  suffix?: string
   decimals?: number
+  suffix?: string
+  prefix?: string
   className?: string
 }
 
-export default function CountUp({ end, duration = 1200, prefix = '', suffix = '', decimals = 0, className = '' }: Props) {
+export default function CountUp({ end, duration = 1200, decimals = 0, suffix = '', prefix = '', className = '' }: Props) {
   const [value, setValue] = useState(0)
   const rafRef = useRef<number>()
   const startRef = useRef<number>()
@@ -28,6 +28,9 @@ export default function CountUp({ end, duration = 1200, prefix = '', suffix = ''
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
   }, [end, duration])
 
-  const display = value.toFixed(decimals)
-  return <span className={className}>{prefix}{Number(display).toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}{suffix}</span>
+  return (
+    <span className={className}>
+      {prefix}{value.toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}{suffix}
+    </span>
+  )
 }
