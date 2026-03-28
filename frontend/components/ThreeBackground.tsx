@@ -36,71 +36,55 @@ export default function ThreeBackground() {
       const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000)
       camera.position.set(0, 0, 28)
 
-      // node network
-      const NODE_COUNT = 38
-      const nodeMat = new THREE.MeshBasicMaterial({ color: 0xe63329, transparent: true, opacity: 0.15 })
-      const nodeGeo = new THREE.SphereGeometry(0.12, 6, 6)
+      // floating market value text sprites
+      const VALUES = [
+        '₹42,85,210', 'XIRR 18.4%', '₹54,200', 'Overlap 64%',
+        'NIFTY 50', '₹1.2Cr', 'SIP ₹25,000', 'CAGR 14.2%',
+        '₹8.5L', 'Direct Plan', 'ELSS', '80C ₹1.5L',
+        'Expense 0.5%', '₹18L drag', 'FIRE ₹6Cr', 'NPS ₹50,000',
+        '₹3,42,000', 'Alpha 3.2%', 'Beta 0.87', 'Sharpe 1.4',
+      ]
 
-      const nodes: any[] = []
-      const positions: any[] = []
+      const sprites: any[] = []
 
-      for (let i = 0; i < NODE_COUNT; i++) {
-        const pos = new THREE.Vector3(
-          (Math.random() - 0.5) * 38,
-          (Math.random() - 0.5) * 22,
-          (Math.random() - 0.5) * 12
+      VALUES.forEach((val, idx) => {
+        const canvas = document.createElement('canvas')
+        canvas.width = 256
+        canvas.height = 64
+        const ctx = canvas.getContext('2d')!
+        ctx.clearRect(0, 0, 256, 64)
+        ctx.fillStyle = 'rgba(230, 51, 41, 0.18)'
+        ctx.font = '600 18px Inter, sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(val, 128, 32)
+
+        const tex = new THREE.CanvasTexture(canvas)
+        const geo = new THREE.PlaneGeometry(4.2, 1.05)
+        const mat = new THREE.MeshBasicMaterial({
+          map: tex,
+          transparent: true,
+          opacity: 1,
+          depthWrite: false,
+        })
+        const mesh = new THREE.Mesh(geo, mat)
+
+        // spread across scene
+        mesh.position.set(
+          (Math.random() - 0.5) * 44,
+          (Math.random() - 0.5) * 26,
+          (Math.random() - 0.5) * 8 - 2
         )
-        positions.push(pos)
-        const mat = new THREE.MeshBasicMaterial({ color: 0xe63329, transparent: true, opacity: 0.15 })
-        const mesh = new THREE.Mesh(nodeGeo, mat)
-        mesh.position.copy(pos)
         mesh.userData = {
-          origin: pos.clone(),
+          baseY: mesh.position.y,
+          baseX: mesh.position.x,
           phase: Math.random() * Math.PI * 2,
+          speed: 0.15 + Math.random() * 0.2,
+          drift: (Math.random() - 0.5) * 0.003,
         }
         scene.add(mesh)
-        nodes.push(mesh)
-      }
-
-      // edges
-      const edges: any[] = []
-      const edgeMat = new THREE.LineBasicMaterial({ color: 0xe63329, transparent: true, opacity: 0.05 })
-      for (let i = 0; i < NODE_COUNT; i++) {
-        for (let j = i + 1; j < NODE_COUNT; j++) {
-          if (positions[i].distanceTo(positions[j]) < 9) {
-            const geo = new THREE.BufferGeometry().setFromPoints([positions[i].clone(), positions[j].clone()])
-            const mat = new THREE.LineBasicMaterial({ color: 0xe63329, transparent: true, opacity: 0.05 })
-            const line = new THREE.Line(geo, mat)
-            line.userData = { i, j }
-            scene.add(line)
-            edges.push(line)
-          }
-        }
-      }
-
-      // ET watermark plane
-      const etCanvas = document.createElement('canvas')
-      etCanvas.width = 1024
-      etCanvas.height = 512
-      const ctx = etCanvas.getContext('2d')!
-      ctx.clearRect(0, 0, 1024, 512)
-      ctx.fillStyle = 'rgba(230, 51, 41, 0.04)'
-      ctx.font = '900 420px Inter, sans-serif'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.fillText('ET', 512, 256)
-
-      const etTex = new THREE.CanvasTexture(etCanvas)
-      const etGeo = new THREE.PlaneGeometry(28, 14)
-      const etMat = new THREE.MeshBasicMaterial({
-        map: etTex,
-        transparent: true,
-        opacity: 1,
-        depthWrite: false,
+        sprites.push(mesh)
       })
-      const etMesh = new THREE.Mesh(etGeo, etMat)
-      etMesh.position.set(0, 0, -4)
-      scene.add(etMesh)
 
       const onResize = () => {
         if (!renderer) return
@@ -115,29 +99,22 @@ export default function ThreeBackground() {
       const animate = () => {
         if (disposed) return
         rafId = requestAnimationFrame(animate)
-        t += 0.008
+        t += 0.005
 
-        nodes.forEach(node => {
-          const { origin, phase } = node.userData
-          node.position.x = origin.x + Math.sin(t * 0.4 + phase) * 1.2
-          node.position.y = origin.y + Math.cos(t * 0.3 + phase) * 0.8
-          node.position.z = origin.z + Math.sin(t * 0.2 + phase) * 0.5
-          node.material.opacity = 0.06 + Math.abs(Math.sin(t * 0.5 + phase)) * 0.12
+        sprites.forEach(sprite => {
+          const { baseY, baseX, phase, speed, drift } = sprite.userData
+          sprite.position.y = baseY + Math.sin(t * speed + phase) * 0.6
+          sprite.position.x = baseX + Math.cos(t * speed * 0.7 + phase) * 0.4
+          // slow rightward drift, wrap around
+          sprite.position.x += drift
+          if (sprite.position.x > 24) sprite.position.x = -24
+          if (sprite.position.x < -24) sprite.position.x = 24
+          // subtle opacity pulse
+          sprite.material.opacity = 0.55 + Math.sin(t * speed + phase) * 0.25
         })
 
-        edges.forEach(edge => {
-          const { i, j } = edge.userData
-          const pts = [nodes[i].position.clone(), nodes[j].position.clone()]
-          edge.geometry.setFromPoints(pts)
-          edge.geometry.attributes.position.needsUpdate = true
-        })
-
-        etMesh.rotation.z = Math.sin(t * 0.15) * 0.015
-        etMesh.position.x = mouse.x * 0.6
-        etMesh.position.y = mouse.y * 0.4
-
-        camera.position.x += (mouse.x * 1.5 - camera.position.x) * 0.02
-        camera.position.y += (mouse.y * 0.8 - camera.position.y) * 0.02
+        camera.position.x += (mouse.x * 0.8 - camera.position.x) * 0.015
+        camera.position.y += (mouse.y * 0.5 - camera.position.y) * 0.015
         camera.lookAt(0, 0, 0)
 
         renderer.render(scene, camera)
@@ -145,13 +122,10 @@ export default function ThreeBackground() {
 
       animate()
 
-      return () => {
-        window.removeEventListener('resize', onResize)
-      }
+      return () => window.removeEventListener('resize', onResize)
     }
 
     script.onerror = () => {
-      // Three.js failed to load — background just won't show, no crash
       console.warn('Three.js background failed to load')
     }
 
