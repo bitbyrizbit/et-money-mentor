@@ -266,7 +266,7 @@ export default function Home() {
           </div>
         </div>
 
-        <main className="pt-32 pb-24 max-w-7xl mx-auto px-8">
+        <main className="pt-28 md:pt-32 pb-28 md:pb-24 max-w-7xl mx-auto px-4 md:px-8">
           {/* hero */}
           <section className="mb-32 flex flex-col items-center text-center">
             <div

@@ -50,9 +50,9 @@ export default function FirePage() {
     <div className="min-h-screen">
       <SideNav />
       <TopBar titleRed="FIRE" title="Planner" />
-      <div className="lg:ml-64 pt-16">
+      <div className="lg:ml-64 pt-14 md:pt-16 pb-20 lg:pb-0">
         <Ticker />
-        <div className="max-w-6xl mx-auto px-8 py-12">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12">
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-12">
             {/* form */}
             <section className="xl:col-span-5 space-y-8">

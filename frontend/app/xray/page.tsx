@@ -91,9 +91,9 @@ export default function XRayPage() {
     <div className="min-h-screen">
       <SideNav />
       <TopBar titleRed="Portfolio" title="X-Ray" />
-      <div className="lg:ml-64 pt-16">
+      <div className="lg:ml-64 pt-14 md:pt-16 pb-20 lg:pb-0">
         <Ticker />
-        <div className="max-w-6xl mx-auto px-8 py-12">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12">
           <header className="mb-12">
             <span className="text-[0.6875rem] font-semibold text-[#e63329] uppercase tracking-[0.2em]">Analysis Tool</span>
             <h1 className="text-[3.5rem] font-extrabold tracking-tighter leading-none mb-4 mt-1">Portfolio X-Ray</h1>
@@ -173,7 +173,7 @@ export default function XRayPage() {
               </div>
 
               {/* stats grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-8 md:mb-12">
                 {[
                   { label: 'Portfolio Value', value: fmtVal(result.total_value), sub: `${result.fund_count} funds`, color: 'text-[#e5e2e1]' },
                   { label: 'True XIRR', value: `${result.overall_xirr}%`, sub: result.overall_xirr > 12 ? 'Above Benchmark' : `${(12.3 - result.overall_xirr).toFixed(1)}% below Nifty`, color: result.overall_xirr > 12 ? 'text-[#adc6ff]' : result.overall_xirr > 8 ? 'text-[#f59e0b]' : 'text-[#e63329]' },
@@ -189,7 +189,7 @@ export default function XRayPage() {
               </div>
 
               {/* bento: benchmark + overlap */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-12">
                 <div className="lg:col-span-2 bg-[#111111] p-8 rounded-2xl">
                   <h4 className="text-sm font-bold uppercase tracking-wider mb-8">XIRR Benchmark Comparison</h4>
                   {[

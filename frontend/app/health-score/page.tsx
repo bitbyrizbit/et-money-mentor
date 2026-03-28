@@ -126,9 +126,9 @@ export default function HealthScorePage() {
       <div className="min-h-screen">
         <SideNav />
         <TopBar titleRed="Money Health" title="Score" />
-        <div className="lg:ml-64 pt-16">
+        <div className="lg:ml-64 pt-14 md:pt-16 pb-20 lg:pb-0">
           <Ticker />
-          <div className="max-w-6xl mx-auto px-8 py-12" style={{ animation: 'fadeUp 0.5s ease' }}>
+          <div className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12" style={{ animation: 'fadeUp 0.5s ease' }}>
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start mb-20">
               <div className="lg:col-span-7">
                 <span className="text-[0.6875rem] font-semibold text-[#e63329] uppercase tracking-[0.2em]">Diagnostic Result</span>
@@ -225,9 +225,9 @@ export default function HealthScorePage() {
     <div className="min-h-screen">
       <SideNav />
       <TopBar titleRed="Money Health" title="Score" />
-      <div className="lg:ml-64 pt-16">
+      <div className="lg:ml-64 pt-14 md:pt-16 pb-20 lg:pb-0">
         <Ticker />
-        <div className="max-w-6xl mx-auto px-8 py-12">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12">
           <section className="mb-12">
             <span className="text-[0.6875rem] font-semibold text-[#e63329] uppercase tracking-[0.2em]">Diagnostic Phase</span>
             <h1 className="text-5xl md:text-6xl font-extrabold tracking-tighter mt-1">Money Health Score.</h1>
