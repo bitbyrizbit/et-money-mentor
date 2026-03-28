@@ -2,146 +2,254 @@
 import { useEffect, useRef } from 'react'
 
 export default function ThreeBackground() {
-  const mountRef = useRef<HTMLDivElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
-    const el = mountRef.current
-    if (!el) return
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
 
     let disposed = false
     let rafId: number
-    let renderer: any, scene: any, camera: any
-    let nodes: any[] = []
-    let edges: any[] = []
-    let mouse = { x: 0, y: 0 }
     let lastFrame = 0
     const FPS = 30
     const interval = 1000 / FPS
 
-    const onMouseMove = (e: MouseEvent) => {
-      mouse.x = (e.clientX / window.innerWidth - 0.5) * 2
-      mouse.y = -(e.clientY / window.innerHeight - 0.5) * 2
-    }
-    window.addEventListener('mousemove', onMouseMove, { passive: true })
+    let W = window.innerWidth
+    let H = window.innerHeight
+    let scrollY = 0
 
-    const script = document.createElement('script')
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'
-    script.onload = () => {
+    canvas.width = W
+    canvas.height = H
+
+    const onResize = () => {
+      W = window.innerWidth
+      H = window.innerHeight
+      canvas.width = W
+      canvas.height = H
+    }
+    const onScroll = () => { scrollY = window.scrollY }
+
+    window.addEventListener('resize', onResize)
+    window.addEventListener('scroll', onScroll, { passive: true })
+
+    // ── Candlestick streams ──────────────────────────────────────────────────
+    // Multiple vertical "streams" of candlestick bars scrolling upward
+    // Each stream is a column of OHLC bars — like a live market feed
+
+    const RED = 'rgba(230,51,41,'
+    const GREEN = 'rgba(34,197,94,'
+    const DIM = 'rgba(255,255,255,'
+
+    type Candle = {
+      open: number
+      close: number
+      high: number
+      low: number
+      bullish: boolean
+    }
+
+    function makeCandle(prev: number): Candle {
+      const change = (Math.random() - 0.48) * 0.12 // slight bearish bias for drama
+      const open = prev
+      const close = Math.max(0.05, Math.min(0.95, open + change))
+      const wick = Math.random() * 0.06
+      const high = Math.max(open, close) + wick
+      const low = Math.min(open, close) - wick
+      return { open, close, high: Math.min(0.98, high), low: Math.max(0.02, low), bullish: close >= open }
+    }
+
+    type Stream = {
+      x: number
+      barH: number
+      gap: number
+      barW: number
+      candles: Candle[]
+      offset: number          // pixel offset — scrolls upward
+      speed: number
+      opacity: number
+      totalH: number
+    }
+
+    const STREAM_COUNT = 9
+
+    function initStream(i: number): Stream {
+      const barH = 18 + Math.random() * 14
+      const gap = 4 + Math.random() * 4
+      const step = barH + gap
+      const totalH = H * 2.5
+      const count = Math.ceil(totalH / step) + 4
+      const candles: Candle[] = []
+      let price = 0.3 + Math.random() * 0.4
+      for (let k = 0; k < count; k++) {
+        const c = makeCandle(price)
+        candles.push(c)
+        price = c.close
+      }
+      return {
+        x: (W / (STREAM_COUNT - 1)) * i + (Math.random() - 0.5) * 40,
+        barH,
+        gap,
+        barW: 6 + Math.random() * 6,
+        candles,
+        offset: Math.random() * totalH,
+        speed: 0.25 + Math.random() * 0.35,
+        opacity: 0.04 + Math.random() * 0.08,
+        totalH,
+      }
+    }
+
+    const streams: Stream[] = Array.from({ length: STREAM_COUNT }, (_, i) => initStream(i))
+
+    // ── Floating price labels ────────────────────────────────────────────────
+    type PriceLabel = {
+      x: number
+      y: number
+      val: string
+      opacity: number
+      vy: number
+      age: number
+      maxAge: number
+    }
+
+    const labels: PriceLabel[] = []
+    let labelTimer = 0
+
+    function spawnLabel() {
+      const prices = [
+        '₹847.30', '₹2,340', '+2.4%', '-1.8%', '₹18,240', 'NIFTY 24,892',
+        'XIRR 12.3%', '₹4.2Cr', 'SIP ₹5K', '+₹1.2L', 'CAGR 18%', '₹0 Fee',
+      ]
+      labels.push({
+        x: 60 + Math.random() * (W - 120),
+        y: H + 10,
+        val: prices[Math.floor(Math.random() * prices.length)],
+        opacity: 0,
+        vy: -(0.18 + Math.random() * 0.22),
+        age: 0,
+        maxAge: 280 + Math.random() * 120,
+      })
+    }
+
+    // ── Grid lines — horizontal market levels ───────────────────────────────
+    const GRID_LINES = 6
+
+    // ── Main render ─────────────────────────────────────────────────────────
+    const draw = (timestamp: number) => {
       if (disposed) return
-      const THREE = (window as any).THREE
+      rafId = requestAnimationFrame(draw)
 
-      renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true, powerPreference: 'low-power' })
-      renderer.setSize(window.innerWidth, window.innerHeight)
-      renderer.setPixelRatio(1) // force 1x — background doesn't need retina
-      renderer.setClearColor(0x000000, 0)
-      el.appendChild(renderer.domElement)
+      if (timestamp - lastFrame < interval) return
+      lastFrame = timestamp
 
-      scene = new THREE.Scene()
-      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000)
-      camera.position.set(0, 0, 28)
+      ctx.clearRect(0, 0, W, H)
 
-      // 24 nodes — enough for visual richness, not so many it lags
-      const NODE_COUNT = 24
-      const nodeMat = new THREE.MeshBasicMaterial({ color: 0xe63329, transparent: true, opacity: 0.14 })
-      const nodeGeo = new THREE.SphereGeometry(0.1, 6, 6)
+      // Scroll parallax — move camera down as user scrolls
+      const parallax = scrollY * 0.12
 
-      const positions: any[] = []
-      for (let i = 0; i < NODE_COUNT; i++) {
-        const pos = new THREE.Vector3(
-          (Math.random() - 0.5) * 38,
-          (Math.random() - 0.5) * 22,
-          (Math.random() - 0.5) * 8
-        )
-        positions.push(pos)
-        const mesh = new THREE.Mesh(nodeGeo, nodeMat.clone())
-        mesh.position.copy(pos)
-        ;(mesh as any)._origin = pos.clone()
-        ;(mesh as any)._phase = Math.random() * Math.PI * 2
-        scene.add(mesh)
-        nodes.push(mesh)
+      // ── Horizontal grid lines (subtle market levels) ──
+      for (let g = 0; g < GRID_LINES; g++) {
+        const y = (H / GRID_LINES) * g + (parallax * 0.3) % (H / GRID_LINES)
+        ctx.beginPath()
+        ctx.moveTo(0, y)
+        ctx.lineTo(W, y)
+        ctx.strokeStyle = `rgba(255,255,255,0.018)`
+        ctx.lineWidth = 1
+        ctx.stroke()
       }
 
-      // only connect nodes within range — fewer edges = better perf
-      const edgeMat = new THREE.LineBasicMaterial({ color: 0xe63329, transparent: true, opacity: 0.05 })
-      for (let i = 0; i < NODE_COUNT; i++) {
-        for (let j = i + 1; j < NODE_COUNT; j++) {
-          if (positions[i].distanceTo(positions[j]) < 8) {
-            const geo = new THREE.BufferGeometry().setFromPoints([positions[i].clone(), positions[j].clone()])
-            const line = new THREE.Line(geo, edgeMat.clone())
-            ;(line as any)._i = i
-            ;(line as any)._j = j
-            scene.add(line)
-            edges.push(line)
-          }
+      // ── Candlestick streams ──
+      streams.forEach(s => {
+        s.offset += s.speed
+        if (s.offset > s.totalH) s.offset = 0
+
+        const step = s.barH + s.gap
+
+        s.candles.forEach((c, idx) => {
+          const rawY = idx * step - s.offset + parallax
+          const y = rawY % (s.totalH)
+
+          if (y < -s.barH * 2 || y > H + s.barH) return
+
+          const color = c.bullish ? GREEN : RED
+          const bodyTop = Math.min(c.open, c.close)
+          const bodyBot = Math.max(c.open, c.close)
+          const bodyH = Math.max(1.5, (bodyBot - bodyTop) * s.barH)
+          const bodyY = y + bodyTop * s.barH
+
+          // wick
+          ctx.beginPath()
+          ctx.moveTo(s.x, y + c.high * s.barH)
+          ctx.lineTo(s.x, y + c.low * s.barH)
+          ctx.strokeStyle = `${color}${s.opacity * 0.7})`
+          ctx.lineWidth = 1
+          ctx.stroke()
+
+          // body
+          ctx.fillStyle = `${color}${s.opacity})`
+          ctx.fillRect(s.x - s.barW / 2, bodyY, s.barW, bodyH)
+        })
+      })
+
+      // ── Floating price labels ──
+      labelTimer++
+      if (labelTimer > 55) {
+        labelTimer = 0
+        if (labels.length < 8) spawnLabel()
+      }
+
+      ctx.font = '500 10px Inter, system-ui, sans-serif'
+      ctx.textAlign = 'left'
+
+      for (let li = labels.length - 1; li >= 0; li--) {
+        const lb = labels[li]
+        lb.y += lb.vy
+        lb.age++
+
+        // fade in/out
+        if (lb.age < 30) lb.opacity = lb.age / 30 * 0.22
+        else if (lb.age > lb.maxAge - 40) lb.opacity = Math.max(0, lb.opacity - 0.006)
+        else lb.opacity = Math.min(0.22, lb.opacity + 0.008)
+
+        if (lb.opacity <= 0 || lb.age > lb.maxAge) {
+          labels.splice(li, 1)
+          continue
         }
+
+        ctx.fillStyle = `${DIM}${lb.opacity})`
+        ctx.fillText(lb.val, lb.x, lb.y)
       }
 
-      const onResize = () => {
-        if (!renderer) return
-        camera.aspect = window.innerWidth / window.innerHeight
-        camera.updateProjectionMatrix()
-        renderer.setSize(window.innerWidth, window.innerHeight)
-      }
-      window.addEventListener('resize', onResize)
-
-      let t = 0
-      const animate = (timestamp: number) => {
-        if (disposed) return
-        rafId = requestAnimationFrame(animate)
-
-        // throttle to 30fps
-        if (timestamp - lastFrame < interval) return
-        lastFrame = timestamp
-        t += 0.006
-
-        nodes.forEach((node) => {
-          const phase = (node as any)._phase
-          const origin = (node as any)._origin
-          node.position.x = origin.x + Math.sin(t * 0.35 + phase) * 1.0
-          node.position.y = origin.y + Math.cos(t * 0.28 + phase) * 0.7
-          node.position.z = origin.z + Math.sin(t * 0.18 + phase) * 0.4
-          node.material.opacity = 0.07 + Math.abs(Math.sin(t * 0.4 + phase)) * 0.10
-        })
-
-        // update edge geometry
-        edges.forEach(edge => {
-          const i = (edge as any)._i
-          const j = (edge as any)._j
-          const pts = [nodes[i].position.clone(), nodes[j].position.clone()]
-          edge.geometry.setFromPoints(pts)
-          edge.geometry.attributes.position.needsUpdate = true
-        })
-
-        // subtle camera drift
-        camera.position.x += (mouse.x * 1.2 - camera.position.x) * 0.015
-        camera.position.y += (mouse.y * 0.7 - camera.position.y) * 0.015
-        camera.lookAt(0, 0, 0)
-
-        renderer.render(scene, camera)
-      }
-      animate(0)
-
-      return () => window.removeEventListener('resize', onResize)
+      // ── Subtle vignette ──
+      const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.1, W / 2, H / 2, H * 0.85)
+      vg.addColorStop(0, 'rgba(8,8,8,0)')
+      vg.addColorStop(1, 'rgba(8,8,8,0.65)')
+      ctx.fillStyle = vg
+      ctx.fillRect(0, 0, W, H)
     }
 
-    document.head.appendChild(script)
+    rafId = requestAnimationFrame(draw)
 
     return () => {
       disposed = true
       cancelAnimationFrame(rafId)
-      window.removeEventListener('mousemove', onMouseMove)
-      if (renderer) {
-        renderer.dispose()
-        renderer.domElement?.parentNode?.removeChild(renderer.domElement)
-      }
-      script.parentNode?.removeChild(script)
+      window.removeEventListener('resize', onResize)
+      window.removeEventListener('scroll', onScroll)
     }
   }, [])
 
   return (
-    <div
-      ref={mountRef}
-      style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 0,
+        pointerEvents: 'none',
+        opacity: 1,
+      }}
     />
   )
 }

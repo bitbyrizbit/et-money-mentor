@@ -7,8 +7,201 @@ import StatsBar from '../components/StatsBar'
 const SpinningCoin = dynamic(() => import('../components/SpinningCoin'), { ssr: false })
 const ThreeBackground = dynamic(() => import('../components/ThreeBackground'), { ssr: false })
 
+// ── Demo Modal ────────────────────────────────────────────────────────────────
+function DemoModal({ onClose }: { onClose: () => void }) {
+  const [tab, setTab] = useState<'xray' | 'health' | 'fire'>('xray')
+
+  const demos = {
+    xray: {
+      title: 'Portfolio X-Ray — Sample Output',
+      items: [
+        { label: 'Portfolio XIRR', value: '8.2%', note: 'vs Nifty 50 benchmark 12.3%', bad: true },
+        { label: 'Fund Overlap', value: '62%', note: 'Axis Bluechip & Mirae Asset Large Cap share 18 stocks', bad: true },
+        { label: 'Direct Plan Savings', value: '₹18.4L', note: 'potential savings over 20 years by switching', bad: false },
+        { label: 'Hidden Expense Ratio', value: '1.82%', note: 'annual drag on ₹12L portfolio = ₹21,840/yr', bad: true },
+        { label: 'Risk Score', value: '7.4 / 10', note: 'high concentration in mid-cap growth', bad: true },
+      ],
+    },
+    health: {
+      title: 'Money Health Score — Sample Output',
+      items: [
+        { label: 'Overall Score', value: '61 / 100', note: 'Needs Attention — 3 critical gaps found', bad: true },
+        { label: 'Emergency Fund', value: '1.2 months', note: 'target: 6 months of expenses', bad: true },
+        { label: 'Insurance Coverage', value: '₹25L', note: 'recommended: ₹1.5Cr for your income level', bad: true },
+        { label: 'Debt-to-Income', value: '38%', note: 'healthy threshold is below 30%', bad: true },
+        { label: 'Savings Rate', value: '14%', note: 'target 30%+ for FIRE by 55', bad: false },
+      ],
+    },
+    fire: {
+      title: 'FIRE Planner — Sample Output',
+      items: [
+        { label: 'FIRE Target Corpus', value: '₹4.2 Cr', note: 'at 4% safe withdrawal for ₹1.4L/month', bad: false },
+        { label: 'Current Trajectory', value: '₹1.8 Cr', note: 'at current SIP of ₹15K/month', bad: true },
+        { label: 'FIRE Age (current)', value: '63 yrs', note: 'vs your target of 52 — 11 yr gap', bad: true },
+        { label: 'SIP Needed for 52', value: '₹48K/month', note: '+₹33K over current — achievable with salary growth', bad: false },
+        { label: 'Indian Inflation Adj.', value: '6.8% p.a.', note: 'localised model — not the global 3% assumption', bad: false },
+      ],
+    },
+  }
+
+  const current = demos[tab]
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9000,
+        background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(16px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '24px',
+      }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div
+        style={{
+          background: '#111111', border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '20px', width: '100%', maxWidth: '640px',
+          overflow: 'hidden', boxShadow: '0 40px 80px rgba(0,0,0,0.6)',
+        }}
+      >
+        {/* modal header */}
+        <div style={{ padding: '24px 28px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '3px', textTransform: 'uppercase', color: '#e63329', marginBottom: '6px' }}>
+              Live Demo Preview
+            </div>
+            <div style={{ fontSize: '18px', fontWeight: 800, color: '#e5e2e1' }}>{current.title}</div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{ background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '8px', width: '36px', height: '36px', cursor: 'pointer', color: '#e5e2e1', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >×</button>
+        </div>
+
+        {/* tab bar */}
+        <div style={{ display: 'flex', gap: '8px', padding: '20px 28px 0' }}>
+          {(['xray', 'health', 'fire'] as const).map(t => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              style={{
+                padding: '6px 14px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                fontSize: '11px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase',
+                background: tab === t ? '#e63329' : 'rgba(255,255,255,0.06)',
+                color: tab === t ? '#fff' : '#e5e2e1',
+                transition: 'all 0.2s',
+              }}
+            >
+              {t === 'xray' ? 'X-Ray' : t === 'health' ? 'Health Score' : 'FIRE'}
+            </button>
+          ))}
+        </div>
+
+        {/* sample data */}
+        <div style={{ padding: '20px 28px 28px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {current.items.map((item, i) => (
+            <div
+              key={i}
+              style={{
+                background: 'rgba(255,255,255,0.03)', borderRadius: '10px',
+                padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                border: `1px solid ${item.bad ? 'rgba(230,51,41,0.15)' : 'rgba(34,197,94,0.12)'}`,
+              }}
+            >
+              <div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: '#e5e2e1', marginBottom: '3px' }}>{item.label}</div>
+                <div style={{ fontSize: '10px', color: 'rgba(229,226,225,0.4)', letterSpacing: '0.3px' }}>{item.note}</div>
+              </div>
+              <div style={{
+                fontSize: '20px', fontWeight: 800, letterSpacing: '-0.5px',
+                color: item.bad ? '#e63329' : '#22c55e',
+                fontVariantNumeric: 'tabular-nums',
+              }}>
+                {item.value}
+              </div>
+            </div>
+          ))}
+
+          <div style={{ marginTop: '8px', padding: '12px 16px', background: 'rgba(230,51,41,0.06)', borderRadius: '10px', border: '1px solid rgba(230,51,41,0.1)' }}>
+            <p style={{ fontSize: '11px', color: 'rgba(229,226,225,0.5)', margin: 0 }}>
+              ⚡ This is sample data for demonstration. Upload your actual CAS statement to get a personalised analysis.
+            </p>
+          </div>
+
+          <Link href="/xray" style={{ textDecoration: 'none' }}>
+            <button
+              style={{
+                width: '100%', padding: '14px', background: '#e63329', border: 'none',
+                borderRadius: '10px', color: '#fff', fontWeight: 700, fontSize: '13px',
+                letterSpacing: '1px', textTransform: 'uppercase', cursor: 'pointer',
+                transition: 'opacity 0.2s',
+              }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '0.88'}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = '1'}
+            >
+              Analyze My Actual Portfolio →
+            </button>
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Info Modals for footer links ──────────────────────────────────────────────
+const footerContent: Record<string, { title: string; body: string }> = {
+  'Privacy Protocol': {
+    title: 'Privacy Protocol',
+    body: 'ET Money Mentor processes all data client-side. Your CAS statement and financial details are never transmitted to or stored on our servers. Analysis happens entirely in your browser session. When you close the tab, your data is gone — permanently. We collect zero personally identifiable information.',
+  },
+  'Security Standards': {
+    title: 'Security Standards',
+    body: 'All AI inference runs via Anthropic\'s Claude API over HTTPS/TLS 1.3. We never log PDF contents or financial figures. No third-party analytics scripts have access to your financial data. The app is stateless — no database, no user accounts, no persistent storage.',
+  },
+  'Terms of Intelligence': {
+    title: 'Terms of Intelligence',
+    body: 'ET Money Mentor is built for the ET AI Hackathon 2026 and is not SEBI registered. All outputs are AI-generated for informational purposes only and do not constitute financial advice. Always consult a SEBI-registered advisor before making investment decisions. Past performance of suggested benchmarks is not indicative of future returns.',
+  },
+}
+
+function InfoModal({ topic, onClose }: { topic: string; onClose: () => void }) {
+  const content = footerContent[topic]
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', width: '100%', maxWidth: '480px', padding: '32px', boxShadow: '0 32px 64px rgba(0,0,0,0.5)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+          <div style={{ fontSize: '16px', fontWeight: 800, color: '#e5e2e1' }}>{content.title}</div>
+          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '8px', width: '32px', height: '32px', cursor: 'pointer', color: '#e5e2e1', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+        </div>
+        <p style={{ fontSize: '14px', lineHeight: '1.7', color: 'rgba(229,226,225,0.65)', margin: 0 }}>{content.body}</p>
+        <div style={{ marginTop: '20px', padding: '12px 14px', background: 'rgba(230,51,41,0.06)', borderRadius: '8px', border: '1px solid rgba(230,51,41,0.1)' }}>
+          <p style={{ fontSize: '11px', color: '#e63329', margin: 0, fontWeight: 600, letterSpacing: '0.5px' }}>🔒 Your data is never stored or shared.</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
 export default function Home() {
   const [visible, setVisible] = useState(false)
+  const [demoOpen, setDemoOpen] = useState(false)
+  const [infoModal, setInfoModal] = useState<string | null>(null)
+
   useEffect(() => { setTimeout(() => setVisible(true), 100) }, [])
 
   const tools = [
@@ -20,11 +213,17 @@ export default function Home() {
   return (
     <>
       <ThreeBackground />
+
+      {demoOpen && <DemoModal onClose={() => setDemoOpen(false)} />}
+      {infoModal && <InfoModal topic={infoModal} onClose={() => setInfoModal(null)} />}
+
       <div style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.6s ease', position: 'relative', zIndex: 1 }}>
 
         {/* nav */}
-        <header className="fixed top-0 w-full flex justify-between items-center px-8 h-16 z-50"
-          style={{ background: 'rgba(8,8,8,0.75)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+        <header
+          className="fixed top-0 w-full flex justify-between items-center px-8 h-16 z-50"
+          style={{ background: 'rgba(8,8,8,0.75)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.03)' }}
+        >
           <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center gap-2 text-xl font-extrabold text-[#e5e2e1]" style={{ textDecoration: 'none' }}>
               <div
@@ -44,8 +243,10 @@ export default function Home() {
         </header>
 
         {/* ticker */}
-        <div className="fixed top-16 w-full border-y border-white/[0.03] h-8 z-40 overflow-hidden flex items-center"
-          style={{ background: 'rgba(17,17,17,0.9)', backdropFilter: 'blur(10px)' }}>
+        <div
+          className="fixed top-16 w-full border-y border-white/[0.03] h-8 z-40 overflow-hidden flex items-center"
+          style={{ background: 'rgba(17,17,17,0.9)', backdropFilter: 'blur(10px)' }}
+        >
           <div className="flex gap-12 whitespace-nowrap px-8 animate-marquee">
             {[
               { l: 'MARKET INSIGHT:', t: "AVERAGE INDIAN XIRR IS 8.2% — VS NIFTY 50'S 12.3%" },
@@ -124,11 +325,12 @@ export default function Home() {
                   Analyze My Portfolio
                 </button>
               </Link>
-              <Link href="/xray">
-                <button className="border border-[#5c403c] text-[#e5e2e1] px-8 py-4 rounded-[10px] font-bold hover:bg-[#111111] transition-all">
-                  View Demo
-                </button>
-              </Link>
+              <button
+                onClick={() => setDemoOpen(true)}
+                className="border border-[#5c403c] text-[#e5e2e1] px-8 py-4 rounded-[10px] font-bold hover:bg-[#111111] transition-all"
+              >
+                View Demo
+              </button>
             </div>
           </section>
 
@@ -183,8 +385,15 @@ export default function Home() {
           <div className="max-w-7xl mx-auto flex flex-col items-center text-center gap-6">
             <div className="text-[#e63329] font-bold text-xl">ET Money Mentor</div>
             <div className="flex flex-wrap justify-center gap-x-8 gap-y-2">
-              {['Privacy Protocol', 'Security Standards', 'Terms of Intelligence'].map(l => (
-                <span key={l} className="text-[0.6875rem] font-semibold uppercase tracking-widest text-[#e5e2e1]/40 hover:text-[#e5e2e1] transition-colors cursor-pointer">{l}</span>
+              {(['Privacy Protocol', 'Security Standards', 'Terms of Intelligence'] as const).map(l => (
+                <button
+                  key={l}
+                  onClick={() => setInfoModal(l)}
+                  className="text-[0.6875rem] font-semibold uppercase tracking-widest text-[#e5e2e1]/40 hover:text-[#e5e2e1] transition-colors cursor-pointer"
+                  style={{ background: 'none', border: 'none', padding: 0 }}
+                >
+                  {l}
+                </button>
               ))}
             </div>
             <p className="text-sm font-light text-[#e5e2e1]/30 max-w-xl">
