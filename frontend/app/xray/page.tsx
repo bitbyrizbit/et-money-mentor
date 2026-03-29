@@ -166,10 +166,46 @@ export default function XRayPage() {
                   <span className="text-[0.6875rem] font-semibold text-[#e63329] uppercase tracking-[0.2em]">Analysis Report {isDemo && '· Demo Mode'}</span>
                   <h2 className="text-[1.75rem] font-extrabold tracking-tight mt-2">Executive Overview</h2>
                 </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                 <button onClick={() => { setResult(null); setFile(null); setIsDemo(false) }}
                   className="text-[0.6875rem] font-bold uppercase tracking-widest text-[#e5e2e1]/40 hover:text-[#e5e2e1] flex items-center gap-1 transition-colors">
                   <span className="material-symbols-outlined text-sm">replay</span> New Analysis
                 </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(`${API}/api/xray/report/pdf`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(result)
+                      })
+                      if (!res.ok) throw new Error('failed')
+                      const blob = await res.blob()
+                      const url = URL.createObjectURL(blob)
+                      const a = document.createElement('a')
+                      a.href = url
+                      a.download = `portfolio-xray-${result.investor_name || 'report'}.pdf`
+                      a.click()
+                      URL.revokeObjectURL(url)
+                    } catch {
+                      alert('PDF download failed. Try again.')
+                    }
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '8px 18px', borderRadius: '8px',
+                    background: '#e63329', color: 'white',
+                    fontWeight: 700, fontSize: '12px',
+                    border: 'none', cursor: 'pointer',
+                    textTransform: 'uppercase', letterSpacing: '0.05em',
+                  }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '0.85'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = '1'}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>download</span>
+                  Export PDF Report
+                </button>
+              </div>
               </div>
 
               {/* stats grid */}
