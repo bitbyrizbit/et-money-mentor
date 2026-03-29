@@ -1,31 +1,33 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 
 const Loader = dynamic(() => import('./Loader'), { ssr: false })
-
 const SESSION_KEY = 'et_loader_done'
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  // Three states:
-  // 'pending'  — haven't checked sessionStorage yet (SSR / hydration)
-  // 'loader'   — first visit, show loader
-  // 'content'  — skip loader, show content
   const [mode, setMode] = useState<'pending' | 'loader' | 'content'>('pending')
   const [contentVisible, setContentVisible] = useState(false)
+  const [scroll, setScroll] = useState(0)
 
   useEffect(() => {
-    // Only runs client-side — safe to read sessionStorage
     const alreadySeen = sessionStorage.getItem(SESSION_KEY)
     if (alreadySeen) {
-      // Returning visitor this session — skip loader entirely
       setMode('content')
-      // Small tick so opacity transition fires
       requestAnimationFrame(() => setContentVisible(true))
     } else {
-      // Genuine first load — show loader
       setMode('loader')
     }
+  }, [])
+
+  useEffect(() => {
+    const onScroll = () => {
+      const el = document.documentElement
+      const total = el.scrollHeight - el.clientHeight
+      setScroll(total > 0 ? (el.scrollTop / total) * 100 : 0)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   function handleLoaderDone() {
@@ -34,8 +36,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     requestAnimationFrame(() => setContentVisible(true))
   }
 
-  // During SSR / before hydration — render children hidden so
-  // Next.js doesn't produce a blank shell
   if (mode === 'pending') {
     return (
       <div style={{ opacity: 0, pointerEvents: 'none' }} aria-hidden>
@@ -43,18 +43,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </div>
     )
   }
-
-  const [scroll, setScroll] = useState(0)
-  useEffect(() => {
-    const onScroll = () => {
-      const el = document.documentElement
-      const scrolled = el.scrollTop
-      const total = el.scrollHeight - el.clientHeight
-      setScroll(total > 0 ? (scrolled / total) * 100 : 0)
-    }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
 
   return (
     <>
@@ -67,16 +55,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         boxShadow: '0 0 8px rgba(230,51,41,0.6)',
       }} />
       {mode === 'loader' && <Loader onDone={handleLoaderDone} />}
-      <div
-        style={{
-          opacity: contentVisible ? 1 : 0,
-          transition: 'opacity 0.45s ease',
-          // While loader is showing, keep children in DOM but hidden
-          // so fonts / images pre-load — avoids layout shift after loader
-          pointerEvents: contentVisible ? 'auto' : 'none',
-          visibility: mode === 'loader' && !contentVisible ? 'hidden' : 'visible',
-        }}
-      >
+      <div style={{
+        opacity: contentVisible ? 1 : 0,
+        transition: 'opacity 0.45s ease',
+        pointerEvents: contentVisible ? 'auto' : 'none',
+        visibility: mode === 'loader' && !contentVisible ? 'hidden' : 'visible',
+      }}>
         {children}
       </div>
     </>
