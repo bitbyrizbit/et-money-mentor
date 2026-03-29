@@ -273,3 +273,19 @@ async def fire_plan(data: dict):
         }
     except Exception as e:
         raise HTTPException(500, detail=str(e))
+
+
+from fastapi.responses import Response
+from reportlab_pdf import create_xray_pdf
+
+@app.post("/api/xray/report/pdf")
+async def xray_pdf(result: dict):
+    try:
+        pdf_bytes = create_xray_pdf(result)
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": "attachment; filename=portfolio-xray.pdf"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

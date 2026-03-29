@@ -96,7 +96,7 @@ export default function XRayPage() {
         <div className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12">
           <header className="mb-12">
             <span className="text-[0.6875rem] font-semibold text-[#e63329] uppercase tracking-[0.2em]">Analysis Tool</span>
-            <h1 className="text-[3.5rem] font-extrabold tracking-tighter leading-none mb-4 mt-1">Portfolio X-Ray</h1>
+            <h1 className="text-[3.5rem] font-extrabold tracking-tighter leading-none mb-4 mt-1">Portfolio <span style={{color:"#e63329"}}>X</span>-Ray</h1>
             <p className="text-[#e5e2e1]/60 max-w-2xl font-light text-lg">Deconstruct your mutual fund holdings. Identify hidden overlaps, calculate true XIRR, and eliminate expense drag with surgical precision.</p>
           </header>
 
