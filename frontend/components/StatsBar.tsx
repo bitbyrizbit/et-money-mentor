@@ -1,120 +1,112 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 
-function SlotCounter({ target, suffix, active }: { target: string; suffix: string; active: boolean }) {
-  const [display, setDisplay] = useState('0')
-  const startedRef = useRef(false)
-  const rafRef = useRef<number>()
+// Effect 1: 10 → 14 smooth count-up
+function CrCounter({ active }: { active: boolean }) {
+  const [val, setVal] = useState(10)
+  const started = useRef(false)
+  const raf = useRef<any>()
 
   useEffect(() => {
-    if (!active) { startedRef.current = false; setDisplay('0'); return }
-    if (startedRef.current) return
-    startedRef.current = true
-    const chars = '0123456789'
-    const num = parseFloat(target)
-    const scrambleDuration = 1000
-    const settleDuration = 600
+    if (!active) { started.current = false; setVal(10); return }
+    if (started.current) return
+    started.current = true
+    const from = 10, to = 14, dur = 1600
     const start = performance.now()
     const tick = (now: number) => {
-      const elapsed = now - start
-      if (elapsed < scrambleDuration) {
-        const scrambled = target.split('').map(c => /\d/.test(c) ? chars[Math.floor(Math.random() * 10)] : c).join('')
-        setDisplay(scrambled)
-        rafRef.current = requestAnimationFrame(tick)
-      } else if (elapsed < scrambleDuration + settleDuration) {
-        const p = (elapsed - scrambleDuration) / settleDuration
-        setDisplay(Math.floor((1 - Math.pow(1 - p, 3)) * num).toString())
-        rafRef.current = requestAnimationFrame(tick)
-      } else {
-        setDisplay(target)
-      }
+      const p = Math.min((now - start) / dur, 1)
+      const eased = 1 - Math.pow(1 - p, 3)
+      setVal(Math.round(from + eased * (to - from)))
+      if (p < 1) raf.current = requestAnimationFrame(tick)
     }
-    rafRef.current = requestAnimationFrame(tick)
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
-  }, [active, target])
-
-  return <span>{display}{suffix}</span>
-}
-
-function CountdownSnap({ active }: { active: boolean }) {
-  const [display, setDisplay] = useState('60')
-  const startedRef = useRef(false)
-  const rafRef = useRef<number>()
-
-  useEffect(() => {
-    if (!active) { startedRef.current = false; setDisplay('60'); return }
-    if (startedRef.current) return
-    startedRef.current = true
-    const start = performance.now()
-    const duration = 1600
-    const tick = (now: number) => {
-      const p = Math.min((now - start) / duration, 1)
-      const val = Math.round(60 - (1 - Math.pow(1 - p, 3)) * 50)
-      setDisplay(val < 10 ? `< ${val}` : val.toString())
-      if (p < 1) rafRef.current = requestAnimationFrame(tick)
-      else setDisplay('< 10')
-    }
-    rafRef.current = requestAnimationFrame(tick)
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
+    raf.current = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf.current)
   }, [active])
 
-  return <span>{display}<span style={{ fontSize: '1.8rem' }}>s</span></span>
+  return <span>{val}Cr+</span>
 }
 
-function SlamCounter({ active }: { active: boolean }) {
-  const [display, setDisplay] = useState('₹0')
-  const startedRef = useRef(false)
-  const rafRef = useRef<number>()
+// Effect 2: 60 → 10 strict one-way countdown, never goes back up
+function CountdownCounter({ active }: { active: boolean }) {
+  const [val, setVal] = useState(60)
+  const started = useRef(false)
+  const raf = useRef<any>()
 
   useEffect(() => {
-    if (!active) { startedRef.current = false; setDisplay('₹0'); return }
-    if (startedRef.current) return
-    startedRef.current = true
-    const peak = 847200
-    const upDur = 1200
-    const holdDur = 400
+    if (!active) { started.current = false; setVal(60); return }
+    if (started.current) return
+    started.current = true
+    const from = 60, to = 10, dur = 1800
     const start = performance.now()
     const tick = (now: number) => {
-      const elapsed = now - start
-      if (elapsed < upDur) {
-        setDisplay(`₹${((1 - Math.pow(1 - elapsed / upDur, 2)) * peak / 100000).toFixed(1)}L`)
-        rafRef.current = requestAnimationFrame(tick)
-      } else if (elapsed < upDur + holdDur) {
-        setDisplay(`₹${(peak / 100000).toFixed(1)}L`)
-        rafRef.current = requestAnimationFrame(tick)
-      } else {
-        setDisplay('₹0')
-      }
+      const p = Math.min((now - start) / dur, 1)
+      const eased = p * p  // ease-in only — starts fast, slows at 10
+      const current = Math.round(from - eased * (from - to))
+      setVal(current)
+      if (p < 1) raf.current = requestAnimationFrame(tick)
+      else setVal(to)
     }
-    rafRef.current = requestAnimationFrame(tick)
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
+    raf.current = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf.current)
   }, [active])
 
-  return <span>{display}</span>
+  return <span>&lt;&nbsp;{val}<span style={{ fontSize: '1.5rem' }}>s</span></span>
 }
 
-function BinaryFlicker({ active }: { active: boolean }) {
-  const [display, setDisplay] = useState('0')
-  const startedRef = useRef(false)
+// Effect 3: static ₹0 — no animation, clean and confident
+function ZeroCounter() {
+  return <span>₹0</span>
+}
+
+// Effect 4: 1 → 2 → 3 → 4 → 5 → 6 stepping up cleanly
+function StepCounter({ active }: { active: boolean }) {
+  const [val, setVal] = useState(0)
+  const started = useRef(false)
 
   useEffect(() => {
-    if (!active) { startedRef.current = false; setDisplay('0'); return }
-    if (startedRef.current) return
-    startedRef.current = true
-    const seq = ['0','1','0','1','0','1','1','0','1','1','0','1','1','1','0','1','1','1','1','0','1','1','1','1','1','0','6']
-    let i = 0
-    const iv = setInterval(() => { setDisplay(seq[i]); i++; if (i >= seq.length) clearInterval(iv) }, 65)
-    return () => clearInterval(iv)
+    if (!active) { started.current = false; setVal(0); return }
+    if (started.current) return
+    started.current = true
+
+    const delays = [100, 180, 160, 200, 170, 220]
+    let accumulated = 0
+    const timers: ReturnType<typeof setTimeout>[] = []
+    ;[1, 2, 3, 4, 5, 6].forEach((v, i) => {
+      accumulated += delays[i]
+      const t = setTimeout(() => setVal(v), accumulated)
+      timers.push(t)
+    })
+    return () => timers.forEach(clearTimeout)
   }, [active])
 
-  return <span>{display}</span>
+  return <span>{val}</span>
 }
 
 const STATS = [
-  { id: 'slot', render: (a: boolean) => <SlotCounter target="14" suffix="Cr+" active={a} />, l: 'Demat Accounts in India', sub: 'and growing every day' },
-  { id: 'countdown', render: (a: boolean) => <CountdownSnap active={a} />, l: 'Full Portfolio Analysis', sub: 'from PDF to AI insights' },
-  { id: 'slam', render: (a: boolean) => <SlamCounter active={a} />, l: 'Commission Model', sub: 'we never charge you' },
-  { id: 'binary', render: (a: boolean) => <BinaryFlicker active={a} />, l: 'Intelligence Dimensions', sub: 'for a complete picture' },
+  {
+    id: 'cr',
+    l: 'Demat Accounts in India',
+    sub: 'growing every day',
+    render: (active: boolean) => <CrCounter active={active} />,
+  },
+  {
+    id: 'countdown',
+    l: 'Full Portfolio Analysis',
+    sub: 'from PDF to AI insights',
+    render: (active: boolean) => <CountdownCounter active={active} />,
+  },
+  {
+    id: 'zero',
+    l: 'Commission Model',
+    sub: "we don't charge you — ever",
+    render: (_: boolean) => <ZeroCounter />,
+  },
+  {
+    id: 'step',
+    l: 'Intelligence Dimensions',
+    sub: 'for a complete financial picture',
+    render: (active: boolean) => <StepCounter active={active} />,
+  },
 ]
 
 export default function StatsBar() {
@@ -140,10 +132,16 @@ export default function StatsBar() {
   return (
     <div ref={ref} className="grid grid-cols-2 md:grid-cols-4 border-y border-white/[0.07]" style={{ position: 'relative', zIndex: 1 }}>
       {STATS.map((s, i) => (
-        <div key={s.id} className={`py-12 px-8 flex flex-col gap-2 group relative overflow-hidden ${i < 3 ? 'border-r border-white/[0.07]' : ''}`}>
-          <div className="absolute left-0 top-1/4 bottom-1/4 w-0.5 bg-[#e63329] -translate-x-full group-hover:translate-x-0 transition-transform duration-300 rounded-r" />
-          <div className="absolute inset-0 bg-[#e63329]/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="text-4xl md:text-5xl font-extrabold text-[#e63329] tracking-tighter relative z-10" style={{ fontVariantNumeric: 'tabular-nums', minHeight: '3.2rem', display: 'flex', alignItems: 'center' }}>
+        <div
+          key={s.id}
+          className={`py-8 px-5 md:py-12 md:px-8 flex flex-col gap-2 group relative overflow-hidden ${i < 3 ? 'border-r border-white/[0.07]' : ''}`}
+        >
+          <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-[#e63329] -translate-x-full group-hover:translate-x-0 transition-transform duration-300 rounded-r" />
+          <div className="absolute inset-0 bg-[#e63329]/[0.025] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div
+            className="text-4xl md:text-5xl font-extrabold text-[#e63329] tracking-tighter relative z-10"
+            style={{ fontVariantNumeric: 'tabular-nums', minHeight: '3.5rem', display: 'flex', alignItems: 'center' }}
+          >
             {s.render(active)}
           </div>
           <span className="text-[0.6875rem] font-bold uppercase tracking-[0.1em] text-[#e5e2e1]/60 relative z-10">{s.l}</span>
