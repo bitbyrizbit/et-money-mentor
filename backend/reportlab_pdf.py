@@ -201,18 +201,18 @@ def create_xray_pdf(result: dict) -> bytes:
     ai_text = result.get("ai_report", "")
     if ai_text:
         story.append(Paragraph("AI Assessment", section_style))
+        ai_head_style = ParagraphStyle(
+            'ai_head', fontSize=10, fontName='Helvetica-Bold',
+            textColor=RED, spaceBefore=12, spaceAfter=4
+        )
         for line in ai_text.split('\n'):
+            is_header = line.strip().startswith('#')
             clean = strip_markdown(line).strip()
             if not clean:
-                story.append(Spacer(1, 5))
+                story.append(Spacer(1, 4))
                 continue
-            # section headers (### lines become bold)
-            if line.strip().startswith('#'):
-                story.append(Paragraph(
-                    clean,
-                    ParagraphStyle('ai_head', fontSize=10, fontName='Helvetica-Bold',
-                                   textColor=RED, spaceBefore=10, spaceAfter=4)
-                ))
+            if is_header:
+                story.append(Paragraph(clean, ai_head_style))
             else:
                 story.append(Paragraph(clean, body_style))
 
