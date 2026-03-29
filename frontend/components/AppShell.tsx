@@ -44,8 +44,28 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     )
   }
 
+  const [scroll, setScroll] = useState(0)
+  useEffect(() => {
+    const onScroll = () => {
+      const el = document.documentElement
+      const scrolled = el.scrollTop
+      const total = el.scrollHeight - el.clientHeight
+      setScroll(total > 0 ? (scrolled / total) * 100 : 0)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
   return (
     <>
+      <div style={{
+        position: 'fixed', top: 0, left: 0, zIndex: 9998,
+        height: '2px', background: '#e63329',
+        width: `${scroll}%`,
+        transition: 'width 0.1s linear',
+        pointerEvents: 'none',
+        boxShadow: '0 0 8px rgba(230,51,41,0.6)',
+      }} />
       {mode === 'loader' && <Loader onDone={handleLoaderDone} />}
       <div
         style={{

@@ -291,13 +291,14 @@ export default function Home() {
               }}
             >
               Your{' '}
-              <span className="inline-flex items-center">
-                <span className="text-[#c8920a]">m</span>
-                <SpinningCoin size={68} />
-                <span className="text-[#c8920a]">ney</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0px', verticalAlign: 'middle' }}>
+                <span style={{ color: '#c8920a' }}>m</span>
+                <SpinningCoin size={64} />
+                <span style={{ color: '#c8920a' }}>ney</span>
               </span>
-              {' '}deserves<br />
-              <span className="text-[#e63329]">honest intelligence.</span>
+              {' '}deserves
+              <br />
+              <span style={{ color: '#e63329' }}>honest intelligence.</span>
             </h1>
 
             <p
